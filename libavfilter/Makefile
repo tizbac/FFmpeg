@@ -220,6 +220,7 @@ OBJS-$(CONFIG_XBR_FILTER)                    += vf_xbr.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 OBJS-$(CONFIG_ZMQ_FILTER)                    += f_zmq.o
 OBJS-$(CONFIG_ZOOMPAN_FILTER)                += vf_zoompan.o
+OBJS-$(CONFIG_FRAMEINTERP_FILTER)             += vf_interpolateframes.o
 
 OBJS-$(CONFIG_CELLAUTO_FILTER)               += vsrc_cellauto.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_testsrc.o
