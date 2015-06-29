@@ -20,7 +20,7 @@ typedef struct {
 
 static const AVOption frameinterp_options[] = {
     { "fps" , "Frames per second of the output video", OFFSET(target_fps), AV_OPT_TYPE_INT, {.i64=60}, 30, 120, .flags = FLAGS },
-    { "blocksize" , "Block size bits to use ( 3=8, 4=16, 5=32, 6=64, 7=128 ) ", OFFSET(blocksize), AV_OPT_TYPE_INT, {.i64=4}, 3, 7, .flags = FLAGS },
+    { "blocksize" , "Block size bits to use ( 3=8, 4=16, 5=32, 6=64, 7=128 ) ", OFFSET(blocksize), AV_OPT_TYPE_INT, {.i64=3}, 3, 7, .flags = FLAGS },
     { NULL }
 };
 
@@ -99,7 +99,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                 * 1 -1
                 * 
                 */
-#define DIAMOND(index, offsetx, offsety) diamondresults[index] = sad_wxh(frame1->data[0]+cY*stride+cX,stride,frame2->data[0]+(cY2+offsety)*stride+cX2+offsetx,stride,blocksize,blocksize)
+#define DIAMOND(index, offsetx, offsety) diamondresults[index] = interp->sad(frame1->data[0]+cY*stride+cX,stride,frame2->data[0]+(cY2+offsety)*stride+cX2+offsetx,stride)
                 
                 while ( 1 )
                 {
@@ -272,7 +272,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                 int k,j;
                 float avg = 0;
                 
-                if ( VE(bX,bY) > 255*blocksize*blocksize/32 )
+                if ( 0 && VE(bX,bY) > 255*blocksize*blocksize/32 )
                 {
                     VY(bX,bY) = (VY(bX+1,bY)+VY(bX-1,bY)+VY(bX+1,bY+1)+VY(bX,  bY+1)+VY(bX-1,bY+1)+VY(bX+1,bY-1)+VY(bX,  bY-1)+VY(bX-1,bY-1))/8;
                     VX(bX,bY) = (VX(bX+1,bY)+VX(bX-1,bY)+VX(bX+1,bY+1)+VX(bX,  bY+1)+VX(bX-1,bY+1)+VX(bX+1,bY-1)+VX(bX,  bY-1)+VX(bX-1,bY-1))/8;
@@ -312,36 +312,19 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         {
             for ( bY = 0; (bY+1)*blocksize < frame1->height; bY++ )
             {
-                int vxPrev,vyPrev;
-                int vxNext,vyNext;
+
                 int vX = vectorsx[bY*(frame1->width/blocksize)+bX]*factor;
                 int vY = vectorsy[bY*(frame1->width/blocksize)+bX]*factor;
-                if ( bX > 0 )
-                    vxPrev = VX(bX-1,bY);
-                else
-                    vxPrev = vX;
-                if ( bY > 0 )
-                    vyPrev = VY(bX,bY-1);
-                else
-                    vyPrev = vY;
+
                 
                 
                 for ( X = bX*blocksize; X < (bX+1)*blocksize; X++ )
                 {
                     for ( Y = bY*blocksize; Y < (bY+1)*blocksize; Y++ )
                     {
-                        int vXI,vYI;
-                        if ( X < blocksize/2 )
-                            vXI = vxPrev+(vX-vxPrev)*((float)(X)/(float)(blocksize/2));
-                        else
-                            vXI = vX+(vxNext-vX)*((float)(X-blocksize/2)/(float)(blocksize/2));
-                        if ( Y < blocksize/2 )
-                            vYI = vyPrev+(vY-vyPrev)*((float)(Y)/(float)(blocksize/2));
-                        else
-                            vYI = vY+(vyNext-vY)*((float)(Y-blocksize/2)/(float)(blocksize/2));
                         uint8_t p = frame1->data[0][stride*Y+X];
-                        if ( Y+vYI < out->height && Y+vYI >= 0 && X+vXI < out->width && X+vXI >= 0 )
-                            out->data[0][stride*(Y+vYI)+X+vXI] = p;
+                        if ( Y+vY < out->height && Y+vY >= 0 && X+vX < out->width && X+vX >= 0 )
+                            out->data[0][stride*(Y+vY)+X+vX] = p;
                     }
                 }
             }
